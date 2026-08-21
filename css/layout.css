@@ -1,0 +1,328 @@
+/**
+ * layout.css
+ * -----------------------------------------------------------------------
+ * Page-level structure: top nav, the two-column app shell (viewer +
+ * sidebar), and the bottom summary bar, plus responsive behavior.
+ *
+ * RESPONSIVE PATTERN (flagged per request):
+ * On viewports narrower than 900px the right sidebar becomes a bottom
+ * SHEET/DRAWER that slides up over the canvas, collapsed by default
+ * behind a "BUILD YOUR TROLLEY" toggle bar docked above the summary bar.
+ * This keeps the full-height 3D canvas as the primary mobile view (which
+ * is what a "3D viewer first" configurator wants) instead of pushing the
+ * whole sidebar into the document flow below a short canvas. It's the
+ * same pattern used by most mobile product configurators (Nike By You,
+ * YETI). If you'd rather have the sidebar just stack below the canvas
+ * in normal flow, that's a smaller change — say the word.
+ * ----------------------------------------------------------------------- */
+
+/* ============================ TOP NAV ============================ */
+
+.topnav {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-nav);
+  height: var(--topnav-height);
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+  padding: 0 var(--space-6);
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.topnav__logo {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.25rem;
+  letter-spacing: var(--tracking-wider);
+  white-space: nowrap;
+}
+
+.topnav__links {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  gap: var(--space-6);
+}
+
+.topnav__icons {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-left: auto;
+}
+
+.topnav__menu-toggle {
+  display: none;
+  margin-left: auto;
+}
+
+/* ============================ APP SHELL ============================ */
+
+.app-shell {
+  display: grid;
+  grid-template-columns: 1fr var(--sidebar-width);
+  grid-template-rows: minmax(0, 1fr);
+  align-items: stretch;
+  height: calc(100vh - var(--topnav-height) - var(--summary-bar-height));
+}
+
+/* --------------------------- VIEWER --------------------------- */
+
+.viewer {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-surface-alt);
+  padding: var(--space-6);
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.viewer__stage {
+  flex: 1;
+  border-radius: var(--radius-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 320px;
+}
+
+.thumbnail-strip {
+  display: flex;
+  gap: var(--space-3);
+  margin-top: var(--space-5);
+  overflow-x: auto;
+  padding-bottom: var(--space-1);
+}
+
+/* ------------------------- SIDEBAR PANEL ------------------------ */
+
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  background: var(--color-surface);
+  border-left: 1px solid var(--color-border);
+  min-height: 0;
+  height: 100%;
+}
+
+.sidebar__scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0 var(--space-5) var(--space-6);
+}
+
+.sidebar-toggle,
+.sidebar__header,
+.sidebar__close,
+.sidebar-backdrop {
+  display: none;
+}
+
+/* ============================ SUMMARY BAR ============================ */
+
+.summary-bar {
+  position: sticky;
+  bottom: 0;
+  z-index: var(--z-summary);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-5);
+  min-height: var(--summary-bar-height);
+  padding: var(--space-4) var(--space-6);
+  background: var(--color-surface);
+  border-top: 1px solid var(--color-border);
+}
+
+.summary-bar__selections {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  flex: 1;
+  min-width: 0;
+}
+
+.summary-bar__right {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  flex-shrink: 0;
+}
+
+.summary-bar__price {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  margin-right: var(--space-2);
+}
+
+/* ============================ BREAKPOINTS ============================ */
+
+/* Tablet: narrow the sidebar before collapsing it entirely */
+@media (max-width: 1140px) {
+  :root {
+    --sidebar-width: 320px;
+  }
+}
+
+@media (max-width: 900px) {
+  .topnav {
+    padding: 0 var(--space-4);
+  }
+
+  .topnav__menu-toggle {
+    display: inline-flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 4px;
+    width: 32px;
+    height: 32px;
+    order: 3;
+  }
+
+  .topnav__menu-toggle span {
+    display: block;
+    height: 2px;
+    background: var(--color-ink);
+    border-radius: 2px;
+  }
+
+  .topnav__links {
+    position: absolute;
+    top: var(--topnav-height);
+    left: 0;
+    right: 0;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0;
+    background: var(--color-surface);
+    border-bottom: 1px solid var(--color-border);
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height var(--duration-med) var(--ease-standard);
+  }
+
+  .topnav__links.is-open {
+    max-height: 320px;
+  }
+
+  .topnav__links .topnav__link {
+    width: 100%;
+    padding: var(--space-4) var(--space-5);
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  /* --- app shell becomes a single full-bleed canvas column --- */
+  .app-shell {
+    grid-template-columns: 1fr;
+    position: relative;
+  }
+
+  .viewer {
+    min-height: calc(100vh - var(--topnav-height) - var(--summary-bar-height));
+    padding: var(--space-4);
+    padding-bottom: calc(var(--space-4) + var(--sidebar-toggle-height));
+  }
+
+  /* --- sidebar becomes a bottom sheet, hidden off-screen by default --- */
+  .sidebar-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: var(--summary-bar-height);
+    z-index: var(--z-sidebar);
+    width: 100%;
+    height: var(--sidebar-toggle-height);
+    padding: 0 var(--space-4);
+    background: var(--color-surface);
+    border-top: 1px solid var(--color-border);
+    font-weight: 600;
+    letter-spacing: var(--tracking-wide);
+    font-size: 0.85rem;
+  }
+
+  .sidebar-toggle svg {
+    transition: transform var(--duration-fast) var(--ease-standard);
+  }
+
+  .sidebar-toggle[aria-expanded="true"] svg {
+    transform: rotate(180deg);
+  }
+
+  .sidebar {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: var(--z-sidebar);
+    max-height: 82vh;
+    border-left: none;
+    border-top: 1px solid var(--color-border);
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    box-shadow: var(--shadow-lg);
+    transform: translateY(100%);
+    transition: transform var(--duration-med) var(--ease-standard);
+  }
+
+  .sidebar.is-open {
+    transform: translateY(0);
+  }
+
+  .sidebar__header {
+    display: flex;
+  }
+
+  .sidebar__close {
+    display: inline-flex;
+  }
+
+  .sidebar-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: calc(var(--z-sidebar) - 1);
+    background: rgba(15, 15, 17, 0.4);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--duration-med) var(--ease-standard);
+  }
+
+  .sidebar-backdrop.is-open {
+    display: block;
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .summary-bar {
+    flex-wrap: wrap;
+    padding: var(--space-3) var(--space-4);
+  }
+
+  .summary-bar__selections {
+    order: 2;
+    width: 100%;
+  }
+
+  .summary-bar__right {
+    order: 1;
+    width: 100%;
+    justify-content: space-between;
+  }
+}
+
+@media (max-width: 560px) {
+  .summary-bar__right {
+    flex-wrap: wrap;
+  }
+
+  .btn--ghost {
+    display: none;
+  }
+}

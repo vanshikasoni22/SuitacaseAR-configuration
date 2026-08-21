@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>QILO — Trolley Configurator</title>
+  <meta name="description" content="Build and customize your QILO trolley in 3D." />
+  <link rel="stylesheet" href="css/base.css" />
+  <link rel="stylesheet" href="css/layout.css" />
+  <link rel="stylesheet" href="css/components.css" />
+</head>
+<body>
+
+  <!-- ============================ TOP NAV ============================ -->
+  <header class="topnav">
+    <div class="topnav__logo">QILO</div>
+
+    <button class="topnav__menu-toggle" id="navMenuToggle" aria-label="Toggle navigation menu" aria-expanded="false" aria-controls="navLinks">
+      <span></span><span></span><span></span>
+    </button>
+
+    <nav class="topnav__links" id="navLinks" aria-label="Primary">
+      <a href="#" class="topnav__link">SHOP</a>
+      <a href="#" class="topnav__link is-active">CUSTOMIZE</a>
+      <a href="#" class="topnav__link">COLLECTIONS</a>
+      <a href="#" class="topnav__link">ABOUT US</a>
+      <a href="#" class="topnav__link">SUPPORT</a>
+    </nav>
+
+    <div class="topnav__icons">
+      <button class="icon-btn" aria-label="Search">
+        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="1.6"/><line x1="21" y1="21" x2="16.2" y2="16.2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+      </button>
+      <button class="icon-btn" aria-label="Account">
+        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="12" cy="8" r="3.6" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M4.5 20c1.6-3.6 5-5.6 7.5-5.6s5.9 2 7.5 5.6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+      </button>
+      <button class="icon-btn" aria-label="Bag">
+        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M6.5 8h11l1 12.5h-13z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M9 8V6.5a3 3 0 0 1 6 0V8" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>
+        <span class="icon-btn__badge" id="bagCount">0</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- ============================ APP SHELL =========================== -->
+  <main class="app-shell">
+
+    <!-- --------------------------- VIEWER --------------------------- -->
+    <section class="viewer" aria-label="3D trolley viewer">
+
+      <div class="viewer__controls">
+        <button class="viewer-ctrl-btn" id="zoomInBtn" aria-label="Zoom in" title="Zoom in">
+          <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        </button>
+        <button class="viewer-ctrl-btn" id="zoomOutBtn" aria-label="Zoom out" title="Zoom out">
+          <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        </button>
+        <button class="viewer-ctrl-btn" id="resetViewBtn" aria-label="Reset view" title="Reset view">
+          <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M20 11A8 8 0 1 0 18.6 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><polyline points="20 5 20 11 14 11" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+
+      <button class="ar-btn" id="viewInArBtn">
+        <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M12 2 21 7v10l-9 5-9-5V7z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M3 7l9 5 9-5M12 12v10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+        VIEW IN AR
+      </button>
+
+      <!-- 3D mount point — scene.js will attach its renderer canvas here -->
+      <div class="viewer__stage" id="viewerStage">
+        <div class="viewer__placeholder">
+          <div class="viewer__placeholder-mark">QILO</div>
+          <p>3D viewer mounts here</p>
+        </div>
+      </div>
+
+      <p class="viewer__drag-label" id="dragLabel">
+        <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path d="M4 12h16M4 12l4-4M4 12l4 4M20 12l-4-4M20 12l-4 4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        DRAG TO ROTATE
+      </p>
+
+      <div class="thumbnail-strip" id="thumbnailStrip" role="tablist" aria-label="Trolley views">
+        <button class="thumbnail is-active" role="tab" aria-selected="true" data-thumb="0"><span>Front</span></button>
+        <button class="thumbnail" role="tab" aria-selected="false" data-thumb="1"><span>Side</span></button>
+        <button class="thumbnail" role="tab" aria-selected="false" data-thumb="2"><span>Back</span></button>
+        <button class="thumbnail" role="tab" aria-selected="false" data-thumb="3"><span>Interior</span></button>
+        <button class="thumbnail" role="tab" aria-selected="false" data-thumb="4"><span>Detail</span></button>
+      </div>
+    </section>
+
+    <!-- ------------------------- SIDEBAR PANEL ------------------------ -->
+    <button class="sidebar-toggle" id="sidebarToggle" aria-expanded="false" aria-controls="sidebar">
+      <span>BUILD YOUR TROLLEY</span>
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><polyline points="6 9 12 15 18 9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+
+    <aside class="sidebar" id="sidebar" aria-label="Build your trolley">
+      <div class="sidebar__header">
+        <h1 class="sidebar__title">BUILD YOUR TROLLEY</h1>
+        <button class="sidebar__close" id="sidebarClose" aria-label="Close panel">&times;</button>
+      </div>
+
+      <div class="sidebar__scroll">
+
+        <!-- STEP 1 — MATERIAL & FINISH -->
+        <section class="step" aria-labelledby="step1Title">
+          <div class="step__header">
+            <span class="step__number">1</span>
+            <h2 class="step__title" id="step1Title">MATERIAL &amp; FINISH</h2>
+          </div>
+
+          <div class="step__body">
+            <label class="field">
+              <span class="field__label">Material Type</span>
+              <select class="select" id="materialSelect">
+                <option value="Aluminium">Aluminium</option>
+                <option value="Polycarbonate">Polycarbonate</option>
+                <option value="Carbon Fiber">Carbon Fiber</option>
+              </select>
+            </label>
+
+            <div class="field">
+              <span class="field__label">Color</span>
+              <div class="swatch-grid" id="colorSwatches" role="radiogroup" aria-label="Color">
+                <!-- swatch buttons injected by ui.js -->
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- STEP 2 — COMPONENTS -->
+        <section class="step" aria-labelledby="step2Title">
+          <div class="step__header">
+            <span class="step__number">2</span>
+            <h2 class="step__title" id="step2Title">COMPONENTS</h2>
+          </div>
+
+          <div class="step__body accordion" id="componentsAccordion">
+
+            <div class="accordion-row" data-section="wheels" data-open="true">
+              <button class="accordion-row__trigger" aria-expanded="true" aria-controls="panel-wheels">
+                <span class="accordion-row__label">Wheels <em>6-wheel spinner</em></span>
+                <svg class="accordion-row__chevron" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><polyline points="6 9 12 15 18 9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </button>
+              <div class="accordion-row__panel" id="panel-wheels">
+                <div class="dot-options" id="wheelColorOptions" role="radiogroup" aria-label="Wheel color">
+                  <!-- dot options injected by ui.js -->
+                </div>
+              </div>
+            </div>
+
+            <div class="accordion-row" data-section="handles" data-open="false">
+              <button class="accordion-row__trigger" aria-expanded="false" aria-controls="panel-handles">
+                <span class="accordion-row__label">Handles</span>
+                <svg class="accordion-row__chevron" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><polyline points="6 9 12 15 18 9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </button>
+              <div class="accordion-row__panel" id="panel-handles">
+                <div class="pill-group" id="handleOptions" role="radiogroup" aria-label="Handle type">
+                  <button class="pill is-active" data-value="telescopic" role="radio" aria-checked="true">Telescopic</button>
+                  <button class="pill" data-value="side" role="radio" aria-checked="false">Side</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="accordion-row" data-section="trim" data-open="false">
+              <button class="accordion-row__trigger" aria-expanded="false" aria-controls="panel-trim">
+                <span class="accordion-row__label">Zippers &amp; Trim <em>Black</em></span>
+                <svg class="accordion-row__chevron" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><polyline points="6 9 12 15 18 9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </button>
+              <div class="accordion-row__panel" id="panel-trim">
+                <div class="dot-options" id="trimColorOptions" role="radiogroup" aria-label="Trim color">
+                  <button class="dot-option is-active" data-value="black" style="--dot-color:#1c1c1e" role="radio" aria-checked="true" aria-label="Black"></button>
+                  <button class="dot-option" data-value="tan" style="--dot-color:#b98d5e" role="radio" aria-checked="false" aria-label="Tan"></button>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </section>
+
+        <!-- STEP 3 — PERSONALIZATION -->
+        <section class="step" aria-labelledby="step3Title">
+          <div class="step__header">
+            <span class="step__number">3</span>
+            <h2 class="step__title" id="step3Title">PERSONALIZATION</h2>
+          </div>
+
+          <div class="step__body">
+            <div class="toggle-row">
+              <span class="field__label">Monogram Engraving</span>
+              <button class="toggle" id="monogramToggle" role="switch" aria-checked="false" aria-label="Toggle monogram engraving">
+                <span class="toggle__thumb"></span>
+              </button>
+            </div>
+
+            <div class="personalization-fields" id="personalizationFields" hidden>
+              <label class="field">
+                <span class="field__label">Initials</span>
+                <input class="text-input" id="initialsInput" type="text" maxlength="3" placeholder="e.g. A.K." />
+              </label>
+
+              <label class="field">
+                <span class="field__label">Location</span>
+                <select class="select" id="locationSelect">
+                  <option value="front-panel">Front Panel</option>
+                  <option value="top-handle">Top Handle</option>
+                  <option value="side-pocket">Side Pocket</option>
+                </select>
+              </label>
+
+              <p class="helper-text">Engraving is laser-etched and permanent. Allow 3–5 extra business days for personalized orders.</p>
+
+              <div class="monogram-preview" id="monogramPreview">
+                <span id="monogramPreviewText">A.K.</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+      </div>
+    </aside>
+    <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+  </main>
+
+  <!-- ============================ BOTTOM BAR ========================== -->
+  <footer class="summary-bar">
+    <div class="summary-bar__selections" id="selectionChips" aria-label="Your selections">
+      <!-- chips injected by ui.js -->
+    </div>
+
+    <div class="summary-bar__right">
+      <div class="summary-bar__price">
+        <span class="summary-bar__price-label">TOTAL PRICE</span>
+        <span class="summary-bar__price-value" id="totalPrice">$480</span>
+      </div>
+      <button class="btn btn--ghost" id="shareDesignBtn">SHARE DESIGN</button>
+      <button class="btn btn--primary" id="addToBagBtn">ADD TO BAG</button>
+    </div>
+  </footer>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
