@@ -8,6 +8,21 @@
   <link rel="stylesheet" href="css/base.css" />
   <link rel="stylesheet" href="css/layout.css" />
   <link rel="stylesheet" href="css/components.css" />
+
+  <!--
+    No bundler in this static shell, so Three.js is loaded as a real ES
+    module straight from a CDN via an import map. scene.js / modelLoader.js
+    then do plain `import * as THREE from 'three'` — swap these two URLs
+    (and nothing else) if you later vendor Three.js locally instead.
+  -->
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+      }
+    }
+  </script>
 </head>
 <body>
 

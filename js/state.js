@@ -28,6 +28,18 @@ export const WHEEL_COLORS = /** @type {const} */ ([
 ]);
 
 /**
+ * Mirrors the two trim dot swatches hardcoded in index.html
+ * (#trimColorOptions). Those are static markup, not rendered from a JS
+ * list like COLORS/WHEEL_COLORS are, so this exists purely so scene.js
+ * can look up a hex value for `state.components.trim.color` without
+ * scraping the DOM for the --dot-color CSS var.
+ */
+export const TRIM_COLORS = {
+  black: '#1c1c1e',
+  tan: '#b98d5e',
+};
+
+/**
  * The canonical shape of the app's configuration state.
  * Keep this flat and serializable — it's what 3D logic + "share design"
  * will read from and write to.

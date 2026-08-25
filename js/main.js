@@ -1,20 +1,23 @@
 /**
  * main.js
  * -----------------------------------------------------------------------
- * Entry point. Wires up the static UI shell. 3D initialization (scene.js
- * / modelLoader.js / ar.js) will be called from here once implemented —
- * left commented out as the intended hook point.
+ * Entry point. Wires up the static UI shell, then hands the viewer stage
+ * to scene.js/modelLoader.js. Stays a thin wiring layer on purpose — all
+ * Three.js logic lives in those two files, not here.
  * ----------------------------------------------------------------------- */
 
 import { initUI } from './ui.js';
+import { initScene, setModel } from './scene.js';
+import { loadTrolleyModel } from './modelLoader.js';
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   initUI();
 
-  // --- future 3D hook point ---
-  // import { initScene } from './scene.js';
-  // import { loadModel } from './modelLoader.js';
+  const stage = document.getElementById('viewerStage');
+  initScene(stage);
+  setModel(await loadTrolleyModel());
+
+  // --- future hook point ---
   // import { initAR } from './ar.js';
-  // const stage = document.getElementById('viewerStage');
-  // initScene(stage).then(loadModel).then(initAR);
+  // initAR(stage);
 });

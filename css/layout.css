@@ -81,12 +81,14 @@
 }
 
 .viewer__stage {
+  position: relative;
   flex: 1;
   border-radius: var(--radius-lg);
   display: flex;
   align-items: center;
   justify-content: center;
   min-height: 320px;
+  overflow: hidden; /* clip the mounted <canvas> to the stage's rounded corners */
 }
 
 .thumbnail-strip {

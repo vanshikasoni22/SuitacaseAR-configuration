@@ -161,17 +161,9 @@ function syncPersonalization() {
 /* ============================ VIEWER CONTROLS (non-3D placeholders) ============================ */
 
 function bindViewerControls() {
-  // Zoom/reset are no-ops until scene.js exists; they just log for now so
-  // the buttons are visibly wired up during shell review.
-  document.getElementById('zoomInBtn').addEventListener('click', () => {
-    console.log('[viewer] zoom in (hook for scene.js)');
-  });
-  document.getElementById('zoomOutBtn').addEventListener('click', () => {
-    console.log('[viewer] zoom out (hook for scene.js)');
-  });
-  document.getElementById('resetViewBtn').addEventListener('click', () => {
-    console.log('[viewer] reset view (hook for scene.js)');
-  });
+  // Zoom in/out/reset are now wired directly in scene.js (camera concerns —
+  // ui.js stays WebGL-free, see header comment). AR is still a stub until
+  // ar.js is implemented.
   document.getElementById('viewInArBtn').addEventListener('click', () => {
     console.log('[viewer] view in AR (hook for ar.js)');
   });
