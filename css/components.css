@@ -62,11 +62,21 @@
 
 /* ============================ VIEWER ============================ */
 
-.viewer__controls {
+/* Shared positioning for the zoom/reset stack + the AR button below it —
+   one absolutely-positioned column so the AR button's spot is never a
+   fragile magic-number offset from the controls box above it. */
+.viewer__controls-stack {
   position: absolute;
   top: var(--space-6);
   left: var(--space-6);
   z-index: 5;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+
+.viewer__controls {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
@@ -102,10 +112,6 @@
 }
 
 .ar-btn {
-  position: absolute;
-  top: var(--space-6);
-  right: var(--space-6);
-  z-index: 5;
   display: inline-flex;
   align-items: center;
   gap: var(--space-2);
@@ -444,7 +450,19 @@
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-2);
-  padding: 0 var(--space-4) var(--space-4);
+  /* No bottom padding here on purpose: this element is the direct child
+     that .accordion-row__panel > * collapses to height:0 via the
+     grid-template-rows 0fr/1fr trick below. overflow:hidden on this same
+     element can't clip its OWN padding — padding is part of its box, not
+     overflowing content — so a bottom padding here would always render
+     as a fixed-height sliver even at 0fr, overlapping whatever sits below
+     the row. Padding is restored only once the row is actually open. */
+  padding: 0 var(--space-4) 0;
+}
+
+.accordion-row[data-open="true"] .dot-options,
+.accordion-row[data-open="true"] .pill-group {
+  padding-bottom: var(--space-4);
 }
 
 .dot-option {

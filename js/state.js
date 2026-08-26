@@ -64,8 +64,8 @@ function createInitialState() {
       activeThumbnail: 0,
     },
     price: {
-      base: 480,
-      currency: 'USD',
+      base: 14999,
+      currency: 'INR',
     },
   };
 }

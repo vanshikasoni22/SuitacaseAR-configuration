@@ -1,8 +1,9 @@
 /**
  * scene.js
  * -----------------------------------------------------------------------
- * Three.js scene: renderer, camera, ambient + directional lighting, and
- * OrbitControls, mounted into the existing #viewerStage element. Also
+ * Three.js scene: renderer, camera, studio 3-point lighting (key/fill/
+ * rim + ambient), and OrbitControls, mounted into the existing
+ * #viewerStage element. Also
  * owns the viewer's zoom-in/zoom-out/reset buttons and the drag-to-rotate
  * behavior — those are camera concerns, so they live here rather than in
  * ui.js (which stays WebGL-free, per its own header comment).
@@ -83,13 +84,28 @@ export function initScene(stageEl) {
   const staticPlaceholder = container.querySelector('.viewer__placeholder');
   if (staticPlaceholder) staticPlaceholder.style.display = 'none';
 
-  // Basic two-light setup: ambient for overall fill so nothing goes fully
-  // black, directional as the key light so the placeholder reads as a
-  // solid 3D form rather than a flat silhouette.
-  scene.add(new THREE.AmbientLight(0xffffff, 0.65));
-  const keyLight = new THREE.DirectionalLight(0xffffff, 1.1);
-  keyLight.position.set(3, 4, 2);
+  // Studio-style 3-point lighting so a dark/matte GLB material (e.g. the
+  // default matte-black finish) still reads as a solid shaded form instead
+  // of a flat silhouette:
+  //   - key: the main light, angled above-front, does most of the modeling
+  //   - fill: softer, opposite side, lifts the shadow side without
+  //           flattening the key light's contrast
+  //   - rim: from behind, separates the model's edge from the background
+  // Ambient is a little brighter than a single-light setup would need, so
+  // nothing ever reads as pure black even from an unlit angle.
+  scene.add(new THREE.AmbientLight(0xffffff, 0.85));
+
+  const keyLight = new THREE.DirectionalLight(0xffffff, 1.8);
+  keyLight.position.set(2.5, 3.2, 2.6); // ~45° above, from the front
   scene.add(keyLight);
+
+  const fillLight = new THREE.DirectionalLight(0xffffff, 0.6);
+  fillLight.position.set(-3, 1.4, 2); // opposite side of the key, lower + softer
+  scene.add(fillLight);
+
+  const rimLight = new THREE.DirectionalLight(0xffffff, 0.9);
+  rimLight.position.set(-1.5, 2.2, -3); // behind the model, for edge definition
+  scene.add(rimLight);
 
   controls = new OrbitControls(camera, renderer.domElement);
   controls.target.set(0, 0, 0);

@@ -74,24 +74,6 @@
   --duration-med: 260ms;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --color-bg: #121214;
-    --color-surface: #18181b;
-    --color-surface-alt: #1f1f23;
-    --color-border: #2c2c31;
-    --color-border-strong: #3a3a40;
-
-    --color-ink: #f4f4f5;
-    --color-ink-soft: #b8b8bd;
-    --color-ink-faint: #7b7b82;
-    --color-ink-inverse: #17171a;
-
-    --color-accent: #f4f4f5;
-    --color-accent-hover: #ffffff;
-  }
-}
-
 *,
 *::before,
 *::after {

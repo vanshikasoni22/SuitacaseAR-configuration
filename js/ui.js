@@ -252,7 +252,11 @@ function renderSelectionChips() {
 
 function renderTotalPrice() {
   const total = computeTotal();
-  document.getElementById('totalPrice').textContent = `$${total.toLocaleString('en-US')}`;
+  document.getElementById('totalPrice').textContent = total.toLocaleString('en-IN', {
+    style: 'currency',
+    currency: 'INR',
+    minimumFractionDigits: 2,
+  });
 }
 
 function bindSummaryBarActions() {
