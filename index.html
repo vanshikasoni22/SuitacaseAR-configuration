@@ -98,7 +98,7 @@
         <button class="thumbnail is-active" role="tab" aria-selected="true" data-thumb="0"><span>Front</span></button>
         <button class="thumbnail" role="tab" aria-selected="false" data-thumb="1"><span>Side</span></button>
         <button class="thumbnail" role="tab" aria-selected="false" data-thumb="2"><span>Back</span></button>
-        <button class="thumbnail" role="tab" aria-selected="false" data-thumb="3"><span>Interior</span></button>
+        <button class="thumbnail" role="tab" aria-selected="false" data-thumb="3" disabled title="Interior view isn't available — this model is exterior-only (no interior/lining geometry)"><span>Interior</span></button>
         <button class="thumbnail" role="tab" aria-selected="false" data-thumb="4"><span>Detail</span></button>
       </div>
     </section>
@@ -184,8 +184,7 @@
               </button>
               <div class="accordion-row__panel" id="panel-trim">
                 <div class="dot-options" id="trimColorOptions" role="radiogroup" aria-label="Trim color">
-                  <button class="dot-option is-active" data-value="black" style="--dot-color:#1c1c1e" role="radio" aria-checked="true" aria-label="Black"></button>
-                  <button class="dot-option" data-value="tan" style="--dot-color:#b98d5e" role="radio" aria-checked="false" aria-label="Tan"></button>
+                  <!-- dot options injected by ui.js -->
                 </div>
               </div>
             </div>

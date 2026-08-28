@@ -7,7 +7,7 @@
  * subscribe to state.js independently once it exists.
  * ----------------------------------------------------------------------- */
 
-import { state, updateState, subscribe, computeTotal, COLORS, WHEEL_COLORS } from './state.js';
+import { state, updateState, subscribe, computeTotal, COLORS, WHEEL_COLORS, TRIM_COLORS } from './state.js';
 
 const checkIconSvg = `
   <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true">
@@ -84,26 +84,41 @@ function bindHandleOptions() {
   });
 }
 
+/** Renders from TRIM_COLORS (state.js) the same way renderWheelColorOptions
+ * renders from WHEEL_COLORS — any number of entries, not hardcoded to 2. */
+function renderTrimColorOptions() {
+  const container = document.getElementById('trimColorOptions');
+  container.innerHTML = TRIM_COLORS.map((c) => `
+    <button
+      type="button"
+      class="dot-option ${state.components.trim.color === c.id ? 'is-active' : ''}"
+      data-trim-color="${c.id}"
+      style="--dot-color:${c.hex}"
+      role="radio"
+      aria-checked="${state.components.trim.color === c.id}"
+      aria-label="${c.label}"
+    ></button>
+  `).join('');
+}
+
 function bindTrimOptions() {
   document.getElementById('trimColorOptions').addEventListener('click', (e) => {
     const btn = e.target.closest('.dot-option');
     if (!btn) return;
-    updateState({ components: { trim: { color: btn.dataset.value } } });
+    updateState({ components: { trim: { color: btn.dataset.trimColor } } });
   });
 }
 
-/** Reflect selected state onto the (statically-authored) handle/trim option buttons. */
+/** Reflect selected state onto the (statically-authored) handle pills, and
+ * keep the "Zippers & Trim <em>…</em>" row label naming the current color. */
 function syncComponentOptionButtons() {
   document.querySelectorAll('#handleOptions .pill').forEach((btn) => {
     const active = btn.dataset.value === state.components.handles.type;
     btn.classList.toggle('is-active', active);
     btn.setAttribute('aria-checked', String(active));
   });
-  document.querySelectorAll('#trimColorOptions .dot-option').forEach((btn) => {
-    const active = btn.dataset.value === state.components.trim.color;
-    btn.classList.toggle('is-active', active);
-    btn.setAttribute('aria-checked', String(active));
-  });
+  const trimLabelEl = document.querySelector('.accordion-row[data-section="trim"] .accordion-row__label em');
+  if (trimLabelEl) trimLabelEl.textContent = TRIM_LABELS[state.components.trim.color];
 }
 
 function bindAccordion() {
@@ -228,6 +243,8 @@ const COLOR_LABELS = Object.fromEntries(COLORS.map((c) => [c.id, c.label]));
 const COLOR_HEX = Object.fromEntries(COLORS.map((c) => [c.id, c.hex]));
 const WHEEL_LABELS = Object.fromEntries(WHEEL_COLORS.map((c) => [c.id, c.label]));
 const WHEEL_HEX = Object.fromEntries(WHEEL_COLORS.map((c) => [c.id, c.hex]));
+const TRIM_LABELS = Object.fromEntries(TRIM_COLORS.map((c) => [c.id, c.label]));
+const TRIM_HEX = Object.fromEntries(TRIM_COLORS.map((c) => [c.id, c.hex]));
 
 function renderSelectionChips() {
   const chips = [
@@ -235,7 +252,7 @@ function renderSelectionChips() {
     { label: COLOR_LABELS[state.color], color: COLOR_HEX[state.color] },
     { label: `Wheels: ${WHEEL_LABELS[state.components.wheels.color]}`, color: WHEEL_HEX[state.components.wheels.color] },
     { label: state.components.handles.type === 'telescopic' ? 'Telescopic Handle' : 'Side Handle', color: null },
-    { label: state.components.trim.color === 'black' ? 'Black Trim' : 'Tan Trim', color: state.components.trim.color === 'black' ? '#1c1c1e' : '#b98d5e' },
+    { label: `${TRIM_LABELS[state.components.trim.color]} Trim`, color: TRIM_HEX[state.components.trim.color] },
   ];
 
   if (state.monogram.enabled) {
@@ -310,11 +327,17 @@ function render() {
     btn.classList.toggle('is-active', active);
     btn.setAttribute('aria-checked', String(active));
   });
+  document.querySelectorAll('#trimColorOptions .dot-option').forEach((btn) => {
+    const active = btn.dataset.trimColor === state.components.trim.color;
+    btn.classList.toggle('is-active', active);
+    btn.setAttribute('aria-checked', String(active));
+  });
 }
 
 export function initUI() {
   renderColorSwatches();
   renderWheelColorOptions();
+  renderTrimColorOptions();
 
   bindColorSwatches();
   bindMaterialSelect();

@@ -30,6 +30,10 @@
   --swatch-silver: #c9cdd3;
   --swatch-navy-blue: #1f3358;
   --swatch-crimson: #9e1b32;
+  --swatch-graphite: #3a3a3d;
+  --swatch-champagne-gold: #c9a86a;
+  --swatch-forest-green: #2c4a3e;
+  --swatch-ivory: #ece7dd;
 
   /* ---- Spacing scale ---- */
   --space-1: 0.25rem;
@@ -71,7 +75,7 @@
   /* ---- Motion ---- */
   --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
   --duration-fast: 150ms;
-  --duration-med: 260ms;
+  --duration-med: 220ms;
 }
 
 *,

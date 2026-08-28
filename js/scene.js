@@ -18,12 +18,17 @@
  *                                        in case they're useful elsewhere
  *   applyColorTarget(target, hex) — recolor a semantic part of the
  *                                   current model (see modelLoader.js)
+ *   setView(viewId)        — smoothly animate the camera to a preset
+ *                             angle ('front'/'side'/'back'/'detail'),
+ *                             self-wired to the thumbnail strip the same
+ *                             way zoom/reset are wired to their buttons
  *
  * Color reactivity: this file subscribes to state.js itself (the same
  * way it self-binds to the zoom buttons) and recolors the model whenever
  * `state.color` / `state.components.trim.color` / `state.components.
  * wheels.color` change — ui.js never touches the 3D scene directly, it
- * only ever calls updateState().
+ * only ever calls updateState(). The active-thumbnail view preset works
+ * the same way (see syncActiveView()).
  *
  * Not implemented yet: ar.js.
  * ----------------------------------------------------------------------- */
@@ -34,6 +39,7 @@ import { state, subscribe, COLORS, WHEEL_COLORS, TRIM_COLORS } from './state.js'
 
 const COLOR_HEX = Object.fromEntries(COLORS.map((c) => [c.id, c.hex]));
 const WHEEL_COLOR_HEX = Object.fromEntries(WHEEL_COLORS.map((c) => [c.id, c.hex]));
+const TRIM_COLOR_HEX = Object.fromEntries(TRIM_COLORS.map((c) => [c.id, c.hex]));
 
 let scene = null;
 let camera = null;
@@ -123,6 +129,7 @@ export function initScene(stageEl) {
   observeResize();
   startRenderLoop();
   subscribe(syncModelColors);
+  subscribe(syncActiveView);
 }
 
 /**
@@ -158,7 +165,7 @@ export function applyColorTarget(target, hex) {
 
 function syncModelColors() {
   applyColorTarget('body', COLOR_HEX[state.color]);
-  applyColorTarget('trim', TRIM_COLORS[state.components.trim.color]);
+  applyColorTarget('trim', TRIM_COLOR_HEX[state.components.trim.color]);
   applyColorTarget('wheels', WHEEL_COLOR_HEX[state.components.wheels.color]);
 }
 
@@ -180,10 +187,131 @@ export function resetView() {
   controls.update();
 }
 
+/**
+ * Smoothly animate the camera to a preset angle around the current
+ * model — reuses the same camera/OrbitControls the drag-to-rotate and
+ * zoom buttons already drive, it just moves them to a new spot instead
+ * of reading pointer input. Angles are approximate/placeholder (there's
+ * no reference footage to match exactly yet); easy to retune later since
+ * they're all in one place.
+ * @param {'front'|'side'|'back'|'detail'} viewId
+ */
+export function setView(viewId) {
+  if (!scene || !currentModel || !camera || !controls) return;
+
+  const box = new THREE.Box3().setFromObject(currentModel);
+  const center = box.getCenter(new THREE.Vector3());
+  // Reuse the distance the model was originally framed at, so front/side/back
+  // all sit at the same "zoomed out enough to see the whole case" level —
+  // only "detail" deliberately moves in closer.
+  const baseDistance = homeCameraPosition.distanceTo(homeTarget) || 1;
+
+  let lookAt = center;
+  let distance = baseDistance;
+  let azimuthDeg;
+  let elevationDeg;
+
+  switch (viewId) {
+    case 'front':
+      azimuthDeg = 32;
+      elevationDeg = 20;
+      break;
+    case 'side':
+      azimuthDeg = 95;
+      elevationDeg = 15;
+      break;
+    case 'back':
+      azimuthDeg = 212;
+      elevationDeg = 20;
+      break;
+    case 'detail': {
+      // Zoom in on the zipper track — the one part we can point to by name
+      // on this GLB (see modelLoader.js's inventory). There's no separate
+      // logo-plate mesh on this model to focus on instead.
+      const zipperMeshes = currentModel.userData?.colorTargets?.trim;
+      if (zipperMeshes?.length) {
+        const detailBox = new THREE.Box3();
+        zipperMeshes.forEach((mesh) => detailBox.expandByObject(mesh));
+        lookAt = detailBox.getCenter(new THREE.Vector3());
+      }
+      azimuthDeg = 50;
+      elevationDeg = 12;
+      distance = baseDistance * 0.42;
+      break;
+    }
+    default:
+      return; // unknown view id — no-op rather than guessing
+  }
+
+  const azimuth = THREE.MathUtils.degToRad(azimuthDeg);
+  const elevation = THREE.MathUtils.degToRad(elevationDeg);
+  const newCameraPosition = new THREE.Vector3(
+    lookAt.x + distance * Math.cos(elevation) * Math.sin(azimuth),
+    lookAt.y + distance * Math.sin(elevation),
+    lookAt.z + distance * Math.cos(elevation) * Math.cos(azimuth)
+  );
+
+  animateCameraTo(newCameraPosition, lookAt);
+}
+
 /* ============================ internals ============================ */
 
 function aspectOf(el) {
   return (el.clientWidth || 1) / (el.clientHeight || 1);
+}
+
+// Thumbnail index -> preset view id. Index 3 ("Interior") is intentionally
+// null: this GLB has no interior/lining geometry (confirmed by walking its
+// full mesh list — see modelLoader.js's header), so there's no honest
+// camera preset for it. Its button is `disabled` in index.html rather than
+// wired to a view that would just show more exterior.
+const THUMBNAIL_VIEWS = ['front', 'side', 'back', null, 'detail'];
+
+let lastActiveThumbnail = state.ui.activeThumbnail;
+
+/** Only react when the *active* thumbnail actually changes, not on every
+ * unrelated state update (color swaps etc. also call every subscriber). */
+function syncActiveView() {
+  if (state.ui.activeThumbnail === lastActiveThumbnail) return;
+  lastActiveThumbnail = state.ui.activeThumbnail;
+  const viewId = THUMBNAIL_VIEWS[lastActiveThumbnail];
+  if (viewId) setView(viewId);
+}
+
+let activeCameraAnimationId = null;
+
+/** Ease + lerp the camera position and OrbitControls target from wherever
+ * they currently are to a new spot, over `duration` ms. Disables user
+ * input for the duration so a drag mid-animation can't fight the tween. */
+function animateCameraTo(targetPosition, targetLookAt, duration = 700) {
+  if (!camera || !controls) return;
+  if (activeCameraAnimationId !== null) cancelAnimationFrame(activeCameraAnimationId);
+
+  const startPosition = camera.position.clone();
+  const startLookAt = controls.target.clone();
+  const startTime = performance.now();
+
+  controls.enabled = false;
+
+  const tick = (now) => {
+    const t = Math.min((now - startTime) / duration, 1);
+    const eased = easeInOutCubic(t);
+    camera.position.lerpVectors(startPosition, targetPosition, eased);
+    controls.target.lerpVectors(startLookAt, targetLookAt, eased);
+    controls.update();
+
+    if (t < 1) {
+      activeCameraAnimationId = requestAnimationFrame(tick);
+    } else {
+      activeCameraAnimationId = null;
+      controls.enabled = true;
+    }
+  };
+  activeCameraAnimationId = requestAnimationFrame(tick);
+}
+
+function easeInOutCubic(t) {
+  return t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2;
 }
 
 function startRenderLoop() {

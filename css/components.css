@@ -212,6 +212,15 @@
   color: var(--color-ink);
 }
 
+.thumbnail:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.thumbnail:disabled:hover {
+  transform: none;
+}
+
 /* ============================ SIDEBAR ============================ */
 
 /* display:none by default is set in layout.css (mobile-only header); overridden there under the 900px breakpoint */
@@ -327,6 +336,7 @@
 .select:hover,
 .text-input:hover {
   border-color: var(--color-ink-faint);
+  box-shadow: var(--shadow-sm);
 }
 
 .select:focus,
@@ -364,6 +374,7 @@
 
 .swatch:hover .swatch__chip {
   transform: translateY(-2px);
+  box-shadow: var(--shadow-sm);
 }
 
 .swatch.is-selected .swatch__chip {
@@ -389,16 +400,26 @@
   text-align: center;
 }
 
-/* ---- accordion (step 2) ---- */
+/* ---- accordion (step 2) ----
+   One bordered container (.accordion) with a divider BETWEEN rows, rather
+   than each row being its own separately-bordered/spaced card — that's
+   what made COMPONENTS read as a stack of independent boxes instead of
+   part of one connected sidebar panel. */
 
-.accordion-row {
+.accordion {
+  display: block; /* override .step__body's flex-column (this element has both classes) */
+  gap: 0; /* ditto — rows are divided by border-bottom, not a flex gap */
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   overflow: hidden;
 }
 
-.accordion-row + .accordion-row {
-  margin-top: var(--space-3);
+.accordion-row {
+  border-bottom: 1px solid var(--color-border);
+}
+
+.accordion-row:last-child {
+  border-bottom: none;
 }
 
 .accordion-row__trigger {
@@ -410,6 +431,17 @@
   font-size: 0.82rem;
   font-weight: 600;
   text-align: left;
+  transition: background var(--duration-fast) var(--ease-standard);
+}
+
+.accordion-row__trigger:hover {
+  background: var(--color-surface-alt);
+}
+
+/* Distinct highlighted state while a row is open, not just on hover —
+   matches the "highlighted state on active/selected" ask. */
+.accordion-row[data-open="true"] .accordion-row__trigger {
+  background: var(--color-surface-alt);
 }
 
 .accordion-row__label em {
@@ -439,10 +471,16 @@
 .accordion-row__panel > * {
   min-height: 0;
   overflow: hidden;
+  opacity: 0;
+  transition: opacity var(--duration-med) var(--ease-standard);
 }
 
 .accordion-row[data-open="true"] .accordion-row__panel {
   grid-template-rows: 1fr;
+}
+
+.accordion-row[data-open="true"] .accordion-row__panel > * {
+  opacity: 1;
 }
 
 .dot-options,
@@ -474,6 +512,10 @@
   transition: box-shadow var(--duration-fast) var(--ease-standard);
 }
 
+.dot-option:hover {
+  box-shadow: 0 0 0 2px var(--color-surface), 0 0 0 4px var(--color-border-strong);
+}
+
 .dot-option.is-active {
   box-shadow: 0 0 0 2px var(--color-surface), 0 0 0 4px var(--color-ink);
 }
@@ -488,10 +530,18 @@
   transition: background var(--duration-fast) var(--ease-standard), color var(--duration-fast) var(--ease-standard), border-color var(--duration-fast) var(--ease-standard);
 }
 
+.pill:hover {
+  border-color: var(--color-ink-faint);
+}
+
 .pill.is-active {
   background: var(--color-ink);
   border-color: var(--color-ink);
   color: var(--color-ink-inverse);
+}
+
+.pill.is-active:hover {
+  border-color: var(--color-ink);
 }
 
 /* ---- personalization (step 3) ---- */
