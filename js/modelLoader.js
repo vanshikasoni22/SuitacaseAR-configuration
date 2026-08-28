@@ -43,14 +43,14 @@
  *                                            material reused, not the
  *                                            same part).
  *
- * "metall" and "Black.001" are left un-wired: the sidebar's Handles row
- * is a TYPE toggle (Telescopic/Side pills), not a color swatch, so there
- * is no UI control to attach a handle color to yet — and Black.001 being
- * shared across two unrelated parts (edge piping + a stray bottom bit)
- * means recoloring it would visibly affect both. Nothing here needs a
- * re-export for what the UI actually asks for today (body/wheels/trim
- * color); it would only matter if a "handle color" control gets added
- * later, since there's no mesh that's *just* the handle bar on its own.
+ * "metall" and "Black.001" are left un-wired: there's no UI control for a
+ * handle color (the sidebar no longer has a Handles section at all), and
+ * Black.001 being shared across two unrelated parts (edge piping + a
+ * stray bottom bit) means recoloring it would visibly affect both.
+ * Nothing here needs a re-export for what the UI actually asks for today
+ * (body/wheels/trim color); it would only matter if a "handle color"
+ * control gets added later, since there's no mesh that's *just* the
+ * handle bar on its own.
  * ----------------------------------------------------------------------- */
 
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';

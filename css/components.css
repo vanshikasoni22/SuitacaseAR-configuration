@@ -180,12 +180,16 @@
 }
 
 .thumbnail {
+  position: relative; /* positions the label + the ::after scrim over the background-image */
   flex: 0 0 auto;
   width: 76px;
   height: 60px;
   border-radius: var(--radius-md);
   border: 2px solid transparent;
-  background: var(--color-surface);
+  overflow: hidden; /* clip the background-image render to the rounded corners */
+  background-color: var(--color-surface-alt); /* shows briefly before the first render lands */
+  background-size: cover;
+  background-position: center;
   box-shadow: var(--shadow-sm);
   display: flex;
   align-items: flex-end;
@@ -193,11 +197,25 @@
   transition: border-color var(--duration-fast) var(--ease-standard), transform var(--duration-fast) var(--ease-standard);
 }
 
+/* A scrim so the label stays legible over whatever the model render looks
+   like at that spot — plain grey text (the old plan, for an empty box)
+   doesn't reliably read over an actual photo. */
+.thumbnail::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.55) 0%, rgba(0, 0, 0, 0) 65%);
+  pointer-events: none;
+}
+
 .thumbnail span {
+  position: relative;
+  z-index: 1;
   font-size: 0.6rem;
   font-weight: 600;
-  color: var(--color-ink-faint);
+  color: rgba(255, 255, 255, 0.92);
   letter-spacing: 0.02em;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
 }
 
 .thumbnail:hover {
@@ -209,16 +227,7 @@
 }
 
 .thumbnail.is-active span {
-  color: var(--color-ink);
-}
-
-.thumbnail:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
-.thumbnail:disabled:hover {
-  transform: none;
+  color: #fff;
 }
 
 /* ============================ SIDEBAR ============================ */
@@ -483,8 +492,7 @@
   opacity: 1;
 }
 
-.dot-options,
-.pill-group {
+.dot-options {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-2);
@@ -498,8 +506,7 @@
   padding: 0 var(--space-4) 0;
 }
 
-.accordion-row[data-open="true"] .dot-options,
-.accordion-row[data-open="true"] .pill-group {
+.accordion-row[data-open="true"] .dot-options {
   padding-bottom: var(--space-4);
 }
 
@@ -518,30 +525,6 @@
 
 .dot-option.is-active {
   box-shadow: 0 0 0 2px var(--color-surface), 0 0 0 4px var(--color-ink);
-}
-
-.pill {
-  padding: var(--space-2) var(--space-4);
-  border-radius: var(--radius-pill);
-  border: 1px solid var(--color-border-strong);
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--color-ink-soft);
-  transition: background var(--duration-fast) var(--ease-standard), color var(--duration-fast) var(--ease-standard), border-color var(--duration-fast) var(--ease-standard);
-}
-
-.pill:hover {
-  border-color: var(--color-ink-faint);
-}
-
-.pill.is-active {
-  background: var(--color-ink);
-  border-color: var(--color-ink);
-  color: var(--color-ink-inverse);
-}
-
-.pill.is-active:hover {
-  border-color: var(--color-ink);
 }
 
 /* ---- personalization (step 3) ---- */

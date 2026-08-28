@@ -72,7 +72,6 @@ function createInitialState() {
     color: COLORS[0].id,
     components: {
       wheels: { count: 6, color: WHEEL_COLORS[0].id },
-      handles: { type: 'telescopic' }, // 'telescopic' | 'side'
       trim: { color: TRIM_COLORS[0].id },
     },
     monogram: {
@@ -82,7 +81,7 @@ function createInitialState() {
     },
     // open/closed state for the accordion rows in COMPONENTS
     ui: {
-      openSections: { wheels: true, handles: false, trim: false },
+      openSections: { wheels: true, trim: false },
       activeThumbnail: 0,
     },
     price: {
@@ -143,6 +142,5 @@ export function computeTotal() {
   let total = state.price.base;
   if (state.monogram.enabled) total += 25;
   if (state.color === 'crimson' || state.color === 'navy-blue') total += 15;
-  if (state.components.handles.type === 'side') total += 10;
   return total;
 }

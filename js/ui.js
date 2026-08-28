@@ -8,6 +8,7 @@
  * ----------------------------------------------------------------------- */
 
 import { state, updateState, subscribe, computeTotal, COLORS, WHEEL_COLORS, TRIM_COLORS } from './state.js';
+import { buildShareUrl, copyToClipboard } from './share.js';
 
 const checkIconSvg = `
   <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true">
@@ -76,14 +77,6 @@ function bindWheelColorOptions() {
   });
 }
 
-function bindHandleOptions() {
-  document.getElementById('handleOptions').addEventListener('click', (e) => {
-    const btn = e.target.closest('.pill');
-    if (!btn) return;
-    updateState({ components: { handles: { type: btn.dataset.value } } });
-  });
-}
-
 /** Renders from TRIM_COLORS (state.js) the same way renderWheelColorOptions
  * renders from WHEEL_COLORS — any number of entries, not hardcoded to 2. */
 function renderTrimColorOptions() {
@@ -109,14 +102,8 @@ function bindTrimOptions() {
   });
 }
 
-/** Reflect selected state onto the (statically-authored) handle pills, and
- * keep the "Zippers & Trim <em>…</em>" row label naming the current color. */
-function syncComponentOptionButtons() {
-  document.querySelectorAll('#handleOptions .pill').forEach((btn) => {
-    const active = btn.dataset.value === state.components.handles.type;
-    btn.classList.toggle('is-active', active);
-    btn.setAttribute('aria-checked', String(active));
-  });
+/** Keep the "Zippers & Trim <em>…</em>" row label naming the current color. */
+function syncTrimLabel() {
   const trimLabelEl = document.querySelector('.accordion-row[data-section="trim"] .accordion-row__label em');
   if (trimLabelEl) trimLabelEl.textContent = TRIM_LABELS[state.components.trim.color];
 }
@@ -251,7 +238,6 @@ function renderSelectionChips() {
     { label: state.material, color: null },
     { label: COLOR_LABELS[state.color], color: COLOR_HEX[state.color] },
     { label: `Wheels: ${WHEEL_LABELS[state.components.wheels.color]}`, color: WHEEL_HEX[state.components.wheels.color] },
-    { label: state.components.handles.type === 'telescopic' ? 'Telescopic Handle' : 'Side Handle', color: null },
     { label: `${TRIM_LABELS[state.components.trim.color]} Trim`, color: TRIM_HEX[state.components.trim.color] },
   ];
 
@@ -277,14 +263,30 @@ function renderTotalPrice() {
 }
 
 function bindSummaryBarActions() {
-  document.getElementById('shareDesignBtn').addEventListener('click', () => {
-    console.log('[summary] share design', JSON.stringify(state));
-  });
+  document.getElementById('shareDesignBtn').addEventListener('click', handleShareDesign);
   document.getElementById('addToBagBtn').addEventListener('click', () => {
     const badge = document.getElementById('bagCount');
     badge.textContent = String(Number(badge.textContent || '0') + 1);
     console.log('[summary] add to bag', JSON.stringify(state));
   });
+}
+
+/**
+ * Encodes the current design into a URL (see share.js), copies it to the
+ * clipboard, and briefly swaps the button's own label as the "copied"
+ * confirmation — no toast component needed for that.
+ */
+async function handleShareDesign() {
+  const btn = document.getElementById('shareDesignBtn');
+  const url = buildShareUrl(state);
+  const copied = await copyToClipboard(url);
+
+  const originalLabel = btn.textContent;
+  btn.textContent = copied ? 'LINK COPIED' : 'COPY FAILED';
+  if (!copied) console.warn('[share] clipboard copy failed — link:', url);
+  setTimeout(() => {
+    btn.textContent = originalLabel;
+  }, 1800);
 }
 
 /* ============================ RESPONSIVE LAYOUT SYNC ============================ */
@@ -309,7 +311,7 @@ function initSummaryBarHeightSync() {
 
 /** Re-render every piece of UI that depends on state. Called on every state change. */
 function render() {
-  syncComponentOptionButtons();
+  syncTrimLabel();
   syncAccordion();
   syncPersonalization();
   syncThumbnailStrip();
@@ -342,7 +344,6 @@ export function initUI() {
   bindColorSwatches();
   bindMaterialSelect();
   bindWheelColorOptions();
-  bindHandleOptions();
   bindTrimOptions();
   bindAccordion();
   bindMonogramToggle();

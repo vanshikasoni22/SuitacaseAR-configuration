@@ -23,12 +23,19 @@
  *                             self-wired to the thumbnail strip the same
  *                             way zoom/reset are wired to their buttons
  *
+ * Also renders the thumbnail strip's own preview images: captureThumbnails()
+ * (internal) briefly reuses the main renderer at thumbnail resolution to
+ * snapshot the model from each preset angle and sets it as that button's
+ * background-image — see its own comment for how that avoids a visible
+ * flicker or a second WebGL context.
+ *
  * Color reactivity: this file subscribes to state.js itself (the same
  * way it self-binds to the zoom buttons) and recolors the model whenever
  * `state.color` / `state.components.trim.color` / `state.components.
  * wheels.color` change — ui.js never touches the 3D scene directly, it
  * only ever calls updateState(). The active-thumbnail view preset works
- * the same way (see syncActiveView()).
+ * the same way (see syncActiveView()), and the thumbnail preview images
+ * are re-rendered on the same color-change trigger.
  *
  * Not implemented yet: ar.js.
  * ----------------------------------------------------------------------- */
@@ -167,6 +174,7 @@ function syncModelColors() {
   applyColorTarget('body', COLOR_HEX[state.color]);
   applyColorTarget('trim', TRIM_COLOR_HEX[state.components.trim.color]);
   applyColorTarget('wheels', WHEEL_COLOR_HEX[state.components.wheels.color]);
+  captureThumbnails(); // re-render the thumbnail strip so it reflects the new colors too
 }
 
 /** Move the camera closer to its target, clamped to controls.minDistance. */
@@ -191,14 +199,27 @@ export function resetView() {
  * Smoothly animate the camera to a preset angle around the current
  * model — reuses the same camera/OrbitControls the drag-to-rotate and
  * zoom buttons already drive, it just moves them to a new spot instead
- * of reading pointer input. Angles are approximate/placeholder (there's
- * no reference footage to match exactly yet); easy to retune later since
- * they're all in one place.
+ * of reading pointer input.
  * @param {'front'|'side'|'back'|'detail'} viewId
  */
 export function setView(viewId) {
   if (!scene || !currentModel || !camera || !controls) return;
+  const transform = getViewTransform(viewId);
+  if (!transform) return;
+  animateCameraTo(transform.position, transform.lookAt);
+}
 
+/**
+ * Pure math for where the camera should sit for a named preset view —
+ * shared by setView() (the animated live move) and captureThumbnails()
+ * (instant snapshots for the thumbnail strip), so a thumbnail can never
+ * drift out of sync with what clicking it actually shows. Angles are
+ * approximate/placeholder (there's no reference footage to match exactly
+ * yet); easy to retune later since they're all in one place.
+ * @param {'front'|'side'|'back'|'detail'} viewId
+ * @returns {{position: THREE.Vector3, lookAt: THREE.Vector3}|null}
+ */
+function getViewTransform(viewId) {
   const box = new THREE.Box3().setFromObject(currentModel);
   const center = box.getCenter(new THREE.Vector3());
   // Reuse the distance the model was originally framed at, so front/side/back
@@ -240,18 +261,72 @@ export function setView(viewId) {
       break;
     }
     default:
-      return; // unknown view id — no-op rather than guessing
+      return null; // unknown view id — no-op rather than guessing
   }
 
   const azimuth = THREE.MathUtils.degToRad(azimuthDeg);
   const elevation = THREE.MathUtils.degToRad(elevationDeg);
-  const newCameraPosition = new THREE.Vector3(
+  const position = new THREE.Vector3(
     lookAt.x + distance * Math.cos(elevation) * Math.sin(azimuth),
     lookAt.y + distance * Math.sin(elevation),
     lookAt.z + distance * Math.cos(elevation) * Math.cos(azimuth)
   );
 
-  animateCameraTo(newCameraPosition, lookAt);
+  return { position, lookAt };
+}
+
+const THUMBNAIL_CAPTURE_WIDTH = 152; // 2x the CSS 76px thumbnail width, for a sharp image on retina
+const THUMBNAIL_CAPTURE_HEIGHT = 120; // 2x the CSS 60px thumbnail height (same 76:60 aspect)
+
+/**
+ * Renders the live model from each preset angle into the *same* renderer/
+ * canvas the real viewer uses (briefly, at thumbnail resolution) and sets
+ * the result as that thumbnail button's background-image — so the strip
+ * shows an actual small render of "what Side looks like" etc., not just a
+ * text label. Re-run on every color change (see syncModelColors()) so the
+ * previews always match the current customization.
+ *
+ * Deliberately reuses the main renderer/camera instead of spinning up a
+ * second WebGL context per call: everything here happens synchronously in
+ * one tick (resize down, move camera, render+capture x4, restore), so the
+ * visible canvas's own render loop — which only ever paints on the next
+ * animation frame — never has a chance to show the intermediate state.
+ */
+function captureThumbnails() {
+  if (!scene || !camera || !renderer || !controls || !currentModel) return;
+
+  const savedSize = new THREE.Vector2();
+  renderer.getSize(savedSize);
+  const savedPixelRatio = renderer.getPixelRatio();
+  const savedAspect = camera.aspect;
+  const savedCameraPosition = camera.position.clone();
+  const savedTarget = controls.target.clone();
+
+  renderer.setPixelRatio(1);
+  renderer.setSize(THUMBNAIL_CAPTURE_WIDTH, THUMBNAIL_CAPTURE_HEIGHT, false);
+  camera.aspect = THUMBNAIL_CAPTURE_WIDTH / THUMBNAIL_CAPTURE_HEIGHT;
+  camera.updateProjectionMatrix();
+
+  THUMBNAIL_VIEWS.forEach((viewId, index) => {
+    const transform = getViewTransform(viewId);
+    if (!transform) return;
+    camera.position.copy(transform.position);
+    camera.lookAt(transform.lookAt);
+    renderer.render(scene, camera);
+
+    const thumbBtn = document.querySelector(`.thumbnail[data-thumb="${index}"]`);
+    if (thumbBtn) thumbBtn.style.backgroundImage = `url("${renderer.domElement.toDataURL('image/png')}")`;
+  });
+
+  // Restore the real viewport/camera before the next visible frame.
+  renderer.setPixelRatio(savedPixelRatio);
+  renderer.setSize(savedSize.x, savedSize.y, false);
+  camera.aspect = savedAspect;
+  camera.position.copy(savedCameraPosition);
+  controls.target.copy(savedTarget);
+  camera.updateProjectionMatrix();
+  controls.update();
+  renderer.render(scene, camera);
 }
 
 /* ============================ internals ============================ */
@@ -260,12 +335,12 @@ function aspectOf(el) {
   return (el.clientWidth || 1) / (el.clientHeight || 1);
 }
 
-// Thumbnail index -> preset view id. Index 3 ("Interior") is intentionally
-// null: this GLB has no interior/lining geometry (confirmed by walking its
-// full mesh list — see modelLoader.js's header), so there's no honest
-// camera preset for it. Its button is `disabled` in index.html rather than
-// wired to a view that would just show more exterior.
-const THUMBNAIL_VIEWS = ['front', 'side', 'back', null, 'detail'];
+// Thumbnail index -> preset view id (data-thumb="0..3" in index.html).
+// There's no "Interior" entry: this GLB has no interior/lining geometry
+// (confirmed by walking its full mesh list — see modelLoader.js's header),
+// so that thumbnail was removed entirely rather than wired to a view that
+// would just show more exterior.
+const THUMBNAIL_VIEWS = ['front', 'side', 'back', 'detail'];
 
 let lastActiveThumbnail = state.ui.activeThumbnail;
 
