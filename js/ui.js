@@ -160,16 +160,10 @@ function syncPersonalization() {
   preview.textContent = state.monogram.initials || 'A.K.';
 }
 
-/* ============================ VIEWER CONTROLS (non-3D placeholders) ============================ */
-
-function bindViewerControls() {
-  // Zoom in/out/reset are now wired directly in scene.js (camera concerns —
-  // ui.js stays WebGL-free, see header comment). AR is still a stub until
-  // ar.js is implemented.
-  document.getElementById('viewInArBtn').addEventListener('click', () => {
-    console.log('[viewer] view in AR (hook for ar.js)');
-  });
-}
+/* ============================ VIEWER CONTROLS ============================ */
+/* Zoom in/out/reset -> scene.js (camera concerns, keeps ui.js WebGL-free).
+   "VIEW IN AR" button -> ar.js / initAR() in main.js (native AR handoff).
+   Neither is bound here. */
 
 function bindThumbnailStrip() {
   document.getElementById('thumbnailStrip').addEventListener('click', (e) => {
@@ -349,7 +343,6 @@ export function initUI() {
   bindMonogramToggle();
   bindInitialsInput();
   bindLocationSelect();
-  bindViewerControls();
   bindThumbnailStrip();
   bindMobileNav();
   bindSidebarToggle();

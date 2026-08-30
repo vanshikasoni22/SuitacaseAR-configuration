@@ -12,6 +12,7 @@ import { initScene, setModel } from './scene.js';
 import { loadTrolleyModel } from './modelLoader.js';
 import { updateState } from './state.js';
 import { decodeShareUrl } from './share.js';
+import { initAR } from './ar.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
   const sharedDesign = decodeShareUrl();
@@ -24,11 +25,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   initUI();
 
+  // "VIEW IN AR" button — native AR Quick Look / Scene Viewer handoff.
+  // Isolated in ar.js; owns the #viewInArBtn click by itself.
+  initAR();
+
   const stage = document.getElementById('viewerStage');
   initScene(stage);
   setModel(await loadTrolleyModel());
-
-  // --- future hook point ---
-  // import { initAR } from './ar.js';
-  // initAR(stage);
 });
