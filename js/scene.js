@@ -1,9 +1,10 @@
 /**
  * scene.js
  * -----------------------------------------------------------------------
- * Three.js scene: renderer, camera, studio 3-point lighting (key/fill/
- * rim + ambient), and OrbitControls, mounted into the existing
- * #viewerStage element. Also
+ * Three.js scene: renderer (sRGB output, ACES filmic tone mapping), a
+ * PMREM-filtered studio environment map for PBR reflections, camera,
+ * studio 3-point lighting (key/fill/rim + ambient), and OrbitControls,
+ * mounted into the existing #viewerStage element. Also
  * owns the viewer's zoom-in/zoom-out/reset buttons and the drag-to-rotate
  * behavior — those are camera concerns, so they live here rather than in
  * ui.js (which stays WebGL-free, per its own header comment).
@@ -42,6 +43,7 @@
 
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { state, subscribe, COLORS, WHEEL_COLORS, TRIM_COLORS } from './state.js';
 
 const COLOR_HEX = Object.fromEntries(COLORS.map((c) => [c.id, c.hex]));
@@ -91,32 +93,55 @@ export function initScene(stageEl) {
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
   renderer.setSize(container.clientWidth, container.clientHeight, false);
   if ('outputColorSpace' in renderer) renderer.outputColorSpace = THREE.SRGBColorSpace;
+
+  // Was missing entirely (defaulted to THREE.NoToneMapping) — that's the
+  // main reason PBR materials were reading dull/flat: NoToneMapping just
+  // clips values above 1.0 instead of rolling them off, which crushes
+  // exactly the highlight/reflection detail that gives a material depth.
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.1;
+
   renderer.domElement.classList.add('viewer__canvas');
   container.appendChild(renderer.domElement);
 
   const staticPlaceholder = container.querySelector('.viewer__placeholder');
   if (staticPlaceholder) staticPlaceholder.style.display = 'none';
 
-  // Studio-style 3-point lighting so a dark/matte GLB material (e.g. the
-  // default matte-black finish) still reads as a solid shaded form instead
-  // of a flat silhouette:
+  // This was the other (bigger) piece actually missing: PBR materials with
+  // any metalness rely on environment reflections for their specular
+  // response — direct lights alone only ever produce small hard
+  // highlights, never the soft sheen/reflection that reads as "material
+  // depth". No HDRI asset is bundled with this project, so this uses
+  // Three's built-in procedural studio room (RoomEnvironment) baked into a
+  // PMREM-filtered environment map — same effect as an HDRI for IBL
+  // purposes, no extra asset to host/load. Only sets scene.environment
+  // (lighting/reflections), not scene.background, so the canvas stays
+  // transparent over the page's own surface behind it.
+  const pmremGenerator = new THREE.PMREMGenerator(renderer);
+  scene.environment = pmremGenerator.fromScene(new RoomEnvironment(), 0.04).texture;
+  pmremGenerator.dispose();
+
+  // Studio-style 3-point lighting so the model still has clear directional
+  // modeling (the environment map above supplies soft ambient-ish fill +
+  // reflections, but no strong directionality on its own):
   //   - key: the main light, angled above-front, does most of the modeling
   //   - fill: softer, opposite side, lifts the shadow side without
   //           flattening the key light's contrast
   //   - rim: from behind, separates the model's edge from the background
-  // Ambient is a little brighter than a single-light setup would need, so
-  // nothing ever reads as pure black even from an unlit angle.
-  scene.add(new THREE.AmbientLight(0xffffff, 0.85));
+  // Intensities are dialed down from the pre-environment/pre-tone-mapping
+  // version — with IBL doing real ambient work now, the old values (meant
+  // to compensate for having *only* direct light) blow out highlights.
+  scene.add(new THREE.AmbientLight(0xffffff, 0.25));
 
-  const keyLight = new THREE.DirectionalLight(0xffffff, 1.8);
+  const keyLight = new THREE.DirectionalLight(0xffffff, 0.9);
   keyLight.position.set(2.5, 3.2, 2.6); // ~45° above, from the front
   scene.add(keyLight);
 
-  const fillLight = new THREE.DirectionalLight(0xffffff, 0.6);
+  const fillLight = new THREE.DirectionalLight(0xffffff, 0.35);
   fillLight.position.set(-3, 1.4, 2); // opposite side of the key, lower + softer
   scene.add(fillLight);
 
-  const rimLight = new THREE.DirectionalLight(0xffffff, 0.9);
+  const rimLight = new THREE.DirectionalLight(0xffffff, 0.45);
   rimLight.position.set(-1.5, 2.2, -3); // behind the model, for edge definition
   scene.add(rimLight);
 
