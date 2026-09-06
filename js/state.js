@@ -26,7 +26,7 @@
  */
 
 export const COLORS = /** @type {const} */ ([
-  { id: 'matte-black', label: 'Matte Black', hex: '#1c1c1e' },
+  { id: 'matte-black', label: 'Matte Black', hex: '#202022' },
   { id: 'silver', label: 'Silver', hex: '#c9cdd3' },
   { id: 'navy-blue', label: 'Navy Blue', hex: '#1f3358' },
   { id: 'crimson', label: 'Crimson', hex: '#9e1b32' },
@@ -37,12 +37,12 @@ export const COLORS = /** @type {const} */ ([
 ]);
 
 export const WHEEL_COLORS = /** @type {const} */ ([
-  { id: 'wheel-black', label: 'Black', hex: '#1c1c1e' },
+  { id: 'wheel-black', label: 'Black', hex: '#202022' },
   { id: 'wheel-grey', label: 'Grey', hex: '#8a8f98' },
   { id: 'wheel-red', label: 'Red', hex: '#9e1b32' },
   { id: 'wheel-silver', label: 'Silver', hex: '#b7bbc2' },
   { id: 'wheel-gold', label: 'Gold', hex: '#c9a86a' },
-  { id: 'wheel-white', label: 'White', hex: '#ececeb' },
+  { id: 'wheel-white', label: 'White', hex: '#e7e7e5' },
   { id: 'wheel-navy', label: 'Navy', hex: '#29456e' },
 ]);
 
@@ -53,12 +53,12 @@ export const WHEEL_COLORS = /** @type {const} */ ([
  * the same way.
  */
 export const TRIM_COLORS = /** @type {const} */ ([
-  { id: 'trim-black', label: 'Black', hex: '#1c1c1e' },
+  { id: 'trim-black', label: 'Black', hex: '#202022' },
   { id: 'trim-tan', label: 'Tan', hex: '#b98d5e' },
   { id: 'trim-grey', label: 'Grey', hex: '#8a8f98' },
   { id: 'trim-gold', label: 'Gold', hex: '#c9a86a' },
   { id: 'trim-navy', label: 'Navy', hex: '#29456e' },
-  { id: 'trim-white', label: 'White', hex: '#ececeb' },
+  { id: 'trim-white', label: 'White', hex: '#e7e7e5' },
 ]);
 
 /**
