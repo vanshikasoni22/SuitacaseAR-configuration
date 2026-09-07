@@ -390,6 +390,19 @@
   gap: var(--space-3);
 }
 
+/* 901-1140px: the sidebar is narrowed to 320px (see layout.css) but still
+   a persistent column, not yet the full-width bottom sheet below 900px —
+   at that width 4 columns gets cramped enough that two-word labels
+   ("Navy Blue", "Champagne Gold") wrap to a second line. Drop to 3 for
+   breathing room. (Not nested under max-width:900px too, since below
+   900px the sidebar becomes a full-width bottom sheet where 4 columns
+   already fits comfortably — verified in the browser at 375/768px.) */
+@media (max-width: 1140px) and (min-width: 901px) {
+  .swatch-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
 .swatch {
   display: flex;
   flex-direction: column;
@@ -601,6 +614,15 @@
   padding-top: var(--space-1);
 }
 
+/* Found during the responsive audit, not viewport-specific: the class
+   rule above has higher specificity than the browser's default
+   `[hidden] { display: none }`, so the `hidden` attribute ui.js sets was
+   silently doing nothing — Initials/Location always showed regardless of
+   the Monogram toggle. */
+.personalization-fields[hidden] {
+  display: none;
+}
+
 .helper-text {
   font-size: 0.72rem;
   color: var(--color-ink-faint);
@@ -643,6 +665,12 @@
   border-radius: 50%;
   background: var(--chip-color, var(--color-ink-faint));
   flex-shrink: 0;
+}
+
+.summary-bar__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
 }
 
 .summary-bar__price-label {

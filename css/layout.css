@@ -164,7 +164,12 @@
 
 /* ============================ BREAKPOINTS ============================ */
 
-/* Tablet: narrow the sidebar before collapsing it entirely */
+/* Tablet: narrow the sidebar before collapsing it entirely.
+   (The swatch-grid column-count override for this range lives in
+   components.css, next to .swatch-grid's base rule — components.css
+   loads after this file, so a same-specificity override placed here
+   would lose the cascade to its unconditional base rule regardless of
+   this media query matching.) */
 @media (max-width: 1140px) {
   :root {
     --sidebar-width: 320px;
@@ -307,9 +312,16 @@
     padding: var(--space-3) var(--space-4);
   }
 
+  /* Chips scroll horizontally in one row instead of wrapping to several —
+     keeps the bar compact and matches how the thumbnail strip above it
+     already behaves, rather than pushing price/actions further down. */
   .summary-bar__selections {
     order: 2;
     width: 100%;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: var(--space-1); /* room for the scrollbar so it doesn't sit on the chips */
   }
 
   .summary-bar__right {
@@ -319,12 +331,27 @@
   }
 }
 
+/* Narrow enough that price + SHARE DESIGN + ADD TO BAG no longer fit in
+   one row — stack price above a full-width actions row instead of
+   wrapping (which used to just hide SHARE DESIGN entirely; restored
+   below since hiding a whole feature by screen width isn't a great
+   pattern). Each button gets equal width, both stay reachable. */
 @media (max-width: 560px) {
   .summary-bar__right {
-    flex-wrap: wrap;
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-3);
   }
 
-  .btn--ghost {
-    display: none;
+  .summary-bar__price {
+    flex-direction: row;
+    align-items: baseline;
+    justify-content: space-between;
+    width: 100%;
+    margin-right: 0;
+  }
+
+  .summary-bar__actions .btn {
+    flex: 1;
   }
 }
