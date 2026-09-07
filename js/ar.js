@@ -14,21 +14,26 @@
  * longer binds that button (it only left a console.log stub there).
  *
  * ───────────────────────────────────────────────────────────────────────
- * ASSET STATUS (checked 2026-08-30):  assets/ar/ is EMPTY (.gitkeep only).
- * There is NO .usdz (iOS) and NO AR-dedicated .glb (Android) committed.
- * The only model in the repo is assets/models/trolley.glb, which the 3D
- * viewer uses. See AR_ASSETS / PER_COLOR_ASSETS below: drop files in with
- * the names this file expects and AR goes live with no code change. Until
- * then every click logs a clear console error and shows the "not ready"
- * hint instead of a broken handoff.
+ * ASSET STATUS (checked 2026-09-07): assets/ar/trolley.glb (1.2MB) and
+ * assets/ar/trolley.usdz (2.2MB) are both present — copied from the
+ * supplied "Suitcase_2" export, the same model assets/models/trolley.glb
+ * (the live 3D viewer) already uses, so AR shows the same design.
  *
- * COLOR ACCURACY: AR Quick Look and Scene Viewer both load a *static*
- * file — neither can be told "use the crimson body" at launch time the
- * way the live Three.js viewer is recolored. To make AR reflect the
- * chosen colour you need one pre-exported file per body colour
- * (8 .usdz + 8 .glb). This module already resolves the right file from
- * `state.color`; flip PER_COLOR_ASSETS to true once those exist. With it
- * false, AR shows the single reference model regardless of selection.
+ * COLOR ACCURACY: both files are a SINGLE STATIC reference color, not one
+ * per swatch, and not the currently-selected color. Confirmed directly —
+ * `usdcat`-dumped the .usdz's material diffuseColor values and they're
+ * byte-for-byte identical to the .glb's baseColorFactor values (both are
+ * the same "Suitcase_2" source scene): the main body sits at
+ * (0.654, 0.450, 0.007), a golden-brown/tan that doesn't match any of the
+ * 8 body-color swatches. AR Quick Look and Scene Viewer both load a
+ * static file at launch — neither can be told "use the crimson body" the
+ * way the live Three.js viewer is recolored. This module already
+ * resolves per-color files from `state.color` (see AR_ASSETS below) for
+ * whenever 8 .usdz + 8 .glb exports exist; flip PER_COLOR_ASSETS to true
+ * then. Until that happens, ship this as "reference model — actual color
+ * may vary" (e.g. a caption near the AR button), since PER_COLOR_ASSETS
+ * is false and AR always shows this one reference color regardless of
+ * what's selected in the configurator.
  * ----------------------------------------------------------------------- */
 
 import { state, subscribe, COLORS } from './state.js';
