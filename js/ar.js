@@ -20,20 +20,26 @@
  * (the live 3D viewer) already uses, so AR shows the same design.
  *
  * COLOR ACCURACY: both files are a SINGLE STATIC reference color, not one
- * per swatch, and not the currently-selected color. Confirmed directly —
+ * per swatch, and not the currently-selected color — this is the actual
+ * explanation for "AR shows a different/wrong color", not a bug in the
+ * asset-selection logic below (resolveAssets() already correctly reads
+ * state.color and would pick a per-color file if one existed — see it
+ * and PER_COLOR_ASSETS/AR_ASSETS further down). Confirmed directly —
  * `usdcat`-dumped the .usdz's material diffuseColor values and they're
  * byte-for-byte identical to the .glb's baseColorFactor values (both are
- * the same "Suitcase_2" source scene): the main body sits at
- * (0.654, 0.450, 0.007), a golden-brown/tan that doesn't match any of the
- * 8 body-color swatches. AR Quick Look and Scene Viewer both load a
- * static file at launch — neither can be told "use the crimson body" the
- * way the live Three.js viewer is recolored. This module already
- * resolves per-color files from `state.color` (see AR_ASSETS below) for
- * whenever 8 .usdz + 8 .glb exports exist; flip PER_COLOR_ASSETS to true
- * then. Until that happens, ship this as "reference model — actual color
- * may vary" (e.g. a caption near the AR button), since PER_COLOR_ASSETS
- * is false and AR always shows this one reference color regardless of
- * what's selected in the configurator.
+ * the same "Suitcase_2" source scene): the main body sits at linear
+ * (0.654, 0.450, 0.007). Gamma-corrected to the sRGB most people would
+ * eyeball on screen, that's roughly (212, 176, 33) — a distinct
+ * yellow/gold, which lines up with it being described as "a yellow
+ * placeholder" in AR. It doesn't match any of the 8 body-color swatches.
+ * AR Quick Look and Scene Viewer both load a static file at launch —
+ * neither can be told "use the crimson body" the way the live Three.js
+ * viewer is recolored. This module already resolves per-color files from
+ * `state.color` for whenever 8 .usdz + 8 .glb exports exist; flip
+ * PER_COLOR_ASSETS to true then. Until that happens, initAR() shows a
+ * "reference color, actual color may vary" hint right before every AR
+ * launch (see the `!PER_COLOR_ASSETS` branch in the click handler) so
+ * real users on real phones aren't left confused by the mismatch either.
  * ----------------------------------------------------------------------- */
 
 import { state, subscribe, COLORS } from './state.js';
@@ -301,6 +307,13 @@ export function initAR() {
     }
     if (!availability.has(path)) {
       console.warn(`${LOG} asset "${path}" not preflighted yet — attempting handoff anyway.`);
+    }
+
+    // See the header's COLOR ACCURACY note: with no per-color exports yet,
+    // AR always shows one static reference color regardless of selection —
+    // say so up front instead of leaving the mismatch unexplained.
+    if (!PER_COLOR_ASSETS) {
+      showHint('AR shows a reference color — actual color may vary.');
     }
 
     if (platform === 'ios') launchIOS(path);

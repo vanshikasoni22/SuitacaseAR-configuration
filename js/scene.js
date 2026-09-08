@@ -30,15 +30,15 @@
  * background-image — see its own comment for how that avoids a visible
  * flicker or a second WebGL context.
  *
- * Color reactivity: this file subscribes to state.js itself (the same
- * way it self-binds to the zoom buttons) and recolors the model whenever
- * `state.color` / `state.components.trim.color` / `state.components.
- * wheels.color` change — ui.js never touches the 3D scene directly, it
- * only ever calls updateState(). The active-thumbnail view preset works
- * the same way (see syncActiveView()), and the thumbnail preview images
- * are re-rendered on the same color-change trigger.
- *
- * Not implemented yet: ar.js.
+ * Color/material reactivity: this file subscribes to state.js itself (the
+ * same way it self-binds to the zoom buttons) and updates the model
+ * whenever `state.color` / `state.components.trim.color` / `state.
+ * components.wheels.color` / `state.material` change — ui.js never
+ * touches the 3D scene directly, it only ever calls updateState().
+ * `state.material` drives the body's roughness/metalness (see
+ * MATERIAL_PROPERTIES + applyMaterialType()), independent of color. The
+ * active-thumbnail view preset works the same way (see syncActiveView()),
+ * and the thumbnail preview images are re-rendered on the same trigger.
  * ----------------------------------------------------------------------- */
 
 import * as THREE from 'three';
@@ -49,6 +49,30 @@ import { state, subscribe, COLORS, WHEEL_COLORS, TRIM_COLORS } from './state.js'
 const COLOR_HEX = Object.fromEntries(COLORS.map((c) => [c.id, c.hex]));
 const WHEEL_COLOR_HEX = Object.fromEntries(WHEEL_COLORS.map((c) => [c.id, c.hex]));
 const TRIM_COLOR_HEX = Object.fromEntries(TRIM_COLORS.map((c) => [c.id, c.hex]));
+
+/**
+ * Material Type -> body surface properties. The GLB ships every material
+ * baked at metalness:1/roughness:1 uniformly — full metal with maximum
+ * roughness has essentially no diffuse response (metals don't have one)
+ * AND scatters what little it reflects into a broad, dim blur, which is
+ * the actual root cause of dark colors reading as flat/detail-less: it's
+ * not primarily an exposure or environment-map problem, it's that the
+ * baked roughness leaves almost nothing visible to catch. Real materials
+ * for reference: aluminium is a fairly smooth, reflective metal;
+ * polycarbonate suitcase shells are a glossy but non-metallic plastic;
+ * carbon fiber sits in between — some sheen, only moderately metallic.
+ */
+const MATERIAL_PROPERTIES = {
+  Aluminium: { metalness: 0.9, roughness: 0.3 },
+  Polycarbonate: { metalness: 0.05, roughness: 0.35 },
+  'Carbon Fiber': { metalness: 0.5, roughness: 0.28 },
+};
+
+// Multiplies scene.environment's contribution per-material (three.js
+// default is 1). Bumped up so reflections read clearly even on the
+// darker colors, without touching direct-light intensities that would
+// also blow out the lighter ones.
+const ENV_MAP_INTENSITY = 1.6;
 
 let scene = null;
 let camera = null;
@@ -99,7 +123,7 @@ export function initScene(stageEl) {
   // clips values above 1.0 instead of rolling them off, which crushes
   // exactly the highlight/reflection detail that gives a material depth.
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.1;
+  renderer.toneMappingExposure = 1.3;
 
   renderer.domElement.classList.add('viewer__canvas');
   container.appendChild(renderer.domElement);
@@ -160,7 +184,7 @@ export function initScene(stageEl) {
   bindViewerButtons();
   observeResize();
   startRenderLoop();
-  subscribe(syncModelColors);
+  subscribe(syncModelAppearance);
   subscribe(syncActiveView);
 }
 
@@ -174,9 +198,18 @@ export function setModel(object3D) {
   if (!scene) return; // initScene() bailed (no WebGL) — nothing to mount into
   if (currentModel) scene.remove(currentModel);
   currentModel = object3D;
+
+  // Boost every material's environment-reflection contribution once, up
+  // front — see ENV_MAP_INTENSITY's comment. Applied to the whole model
+  // (not just the color-swappable parts) so wheels/trim/hardware all get
+  // the same visible-reflection treatment.
+  object3D.traverse((node) => {
+    if (node.isMesh && node.material) node.material.envMapIntensity = ENV_MAP_INTENSITY;
+  });
+
   scene.add(currentModel);
   frameCameraOnObject(currentModel);
-  syncModelColors(); // apply whatever state.js already holds, immediately — no flash of GLB-default colors
+  syncModelAppearance(); // apply whatever state.js already holds, immediately — no flash of GLB-default look
 }
 
 /**
@@ -195,11 +228,29 @@ export function applyColorTarget(target, hex) {
   meshes.forEach((mesh) => mesh.material.color.set(hex));
 }
 
-function syncModelColors() {
+/**
+ * Set the body's roughness/metalness to match the selected Material Type
+ * (see MATERIAL_PROPERTIES) — independent of color, so any color can be
+ * viewed in any material finish. Falls back to Aluminium's properties for
+ * an unrecognized value rather than leaving whatever was there before.
+ * @param {string} materialType
+ */
+function applyMaterialType(materialType) {
+  const meshes = currentModel?.userData?.colorTargets?.body;
+  if (!meshes) return;
+  const props = MATERIAL_PROPERTIES[materialType] || MATERIAL_PROPERTIES.Aluminium;
+  meshes.forEach((mesh) => {
+    mesh.material.metalness = props.metalness;
+    mesh.material.roughness = props.roughness;
+  });
+}
+
+function syncModelAppearance() {
   applyColorTarget('body', COLOR_HEX[state.color]);
   applyColorTarget('trim', TRIM_COLOR_HEX[state.components.trim.color]);
   applyColorTarget('wheels', WHEEL_COLOR_HEX[state.components.wheels.color]);
-  captureThumbnails(); // re-render the thumbnail strip so it reflects the new colors too
+  applyMaterialType(state.material);
+  captureThumbnails(); // re-render the thumbnail strip so it reflects the new colors/material too
 }
 
 /** Move the camera closer to its target, clamped to controls.minDistance. */
@@ -308,8 +359,9 @@ const THUMBNAIL_CAPTURE_HEIGHT = 120; // 2x the CSS 60px thumbnail height (same 
  * canvas the real viewer uses (briefly, at thumbnail resolution) and sets
  * the result as that thumbnail button's background-image — so the strip
  * shows an actual small render of "what Side looks like" etc., not just a
- * text label. Re-run on every color change (see syncModelColors()) so the
- * previews always match the current customization.
+ * text label. Re-run on every color/material change (see
+ * syncModelAppearance()) so the previews always match the current
+ * customization.
  *
  * Deliberately reuses the main renderer/camera instead of spinning up a
  * second WebGL context per call: everything here happens synchronously in
