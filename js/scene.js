@@ -64,17 +64,26 @@ const TRIM_COLOR_HEX = Object.fromEntries(TRIM_COLORS.map((c) => [c.id, c.hex]))
  * polycarbonate suitcase shells are a glossy but non-metallic plastic;
  * carbon fiber sits in between — some sheen, only moderately metallic.
  */
+// Roughness nudged up from an earlier, shinier pass (Aluminium was 0.3,
+// Carbon Fiber 0.28): with metalness this high, a low roughness makes a
+// near-mirror specular lobe — it looks great in the exact spot where a
+// light happens to reflect toward the camera, and goes almost fully
+// black everywhere else on the same rotation, since a fully metallic
+// material has no diffuse fallback at all. Broadening the lobe a bit
+// keeps these reading clearly metallic while catching light across a
+// much wider range of viewing/rotation angles instead of just a few
+// lucky ones.
 const MATERIAL_PROPERTIES = {
-  Aluminium: { metalness: 0.9, roughness: 0.3 },
-  Polycarbonate: { metalness: 0.05, roughness: 0.35 },
-  'Carbon Fiber': { metalness: 0.5, roughness: 0.28 },
+  Aluminium: { metalness: 0.85, roughness: 0.42 },
+  Polycarbonate: { metalness: 0.05, roughness: 0.4 },
+  'Carbon Fiber': { metalness: 0.5, roughness: 0.38 },
 };
 
 // Multiplies scene.environment's contribution per-material (three.js
 // default is 1). Bumped up so reflections read clearly even on the
 // darker colors, without touching direct-light intensities that would
 // also blow out the lighter ones.
-const ENV_MAP_INTENSITY = 1.6;
+const ENV_MAP_INTENSITY = 1.9;
 
 let scene = null;
 let camera = null;
@@ -125,7 +134,7 @@ export function initScene(stageEl) {
   // clips values above 1.0 instead of rolling them off, which crushes
   // exactly the highlight/reflection detail that gives a material depth.
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.3;
+  renderer.toneMappingExposure = 1.4;
 
   renderer.domElement.classList.add('viewer__canvas');
   container.appendChild(renderer.domElement);
@@ -154,10 +163,13 @@ export function initScene(stageEl) {
   //   - fill: softer, opposite side, lifts the shadow side without
   //           flattening the key light's contrast
   //   - rim: from behind, separates the model's edge from the background
-  // Intensities are dialed down from the pre-environment/pre-tone-mapping
-  // version — with IBL doing real ambient work now, the old values (meant
-  // to compensate for having *only* direct light) blow out highlights.
-  scene.add(new THREE.AmbientLight(0xffffff, 0.25));
+  // This is a hard floor that applies equally in every direction
+  // regardless of rotation or which light's reflection lands where —
+  // raised from an earlier pass (0.25) specifically so a shiny, highly
+  // metallic surface (near-zero diffuse response on its own) never reads
+  // as fully black just because no single light's reflection cone
+  // happens to line up with the camera at that exact angle.
+  scene.add(new THREE.AmbientLight(0xffffff, 0.45));
 
   // These three are parented to the CAMERA, not the scene — a "headlight"
   // rig. This app rotates by orbiting the camera around a stationary
@@ -180,11 +192,17 @@ export function initScene(stageEl) {
   keyLight.position.set(1.5, 2, 1); // up + to the camera's right, roughly over-the-shoulder
   camera.add(keyLight);
 
-  const fillLight = new THREE.DirectionalLight(0xffffff, 0.35);
-  fillLight.position.set(-2.5, 0.8, 0.5); // camera's opposite side, lower + softer
+  // Fill's whole job is covering whatever the key light misses — widened
+  // further from the key (more to the side, and now angled slightly
+  // downward instead of just "lower") so between the two there's a much
+  // wider spread of reflection directions being fed toward the camera,
+  // and strengthened so it actually shows up next to a strong key light
+  // instead of being negligible in comparison.
+  const fillLight = new THREE.DirectionalLight(0xffffff, 0.55);
+  fillLight.position.set(-2.8, -0.6, 1.2); // camera's opposite side, from below, from the front
   camera.add(fillLight);
 
-  const rimLight = new THREE.DirectionalLight(0xffffff, 0.45);
+  const rimLight = new THREE.DirectionalLight(0xffffff, 0.5);
   rimLight.position.set(-0.5, 1.5, -4); // far side of the model as seen from the camera, for edge definition
   camera.add(rimLight);
 
