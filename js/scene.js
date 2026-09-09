@@ -3,7 +3,9 @@
  * -----------------------------------------------------------------------
  * Three.js scene: renderer (sRGB output, ACES filmic tone mapping), a
  * PMREM-filtered studio environment map for PBR reflections, camera,
- * studio 3-point lighting (key/fill/rim + ambient), and OrbitControls,
+ * studio 3-point lighting (key/fill/rim, parented to the camera as a
+ * "headlight" rig so it stays consistent from every rotation angle — see
+ * initScene()'s comment — + a scene-level ambient), and OrbitControls,
  * mounted into the existing #viewerStage element. Also
  * owns the viewer's zoom-in/zoom-out/reset buttons and the drag-to-rotate
  * behavior — those are camera concerns, so they live here rather than in
@@ -145,7 +147,7 @@ export function initScene(stageEl) {
   scene.environment = pmremGenerator.fromScene(new RoomEnvironment(), 0.04).texture;
   pmremGenerator.dispose();
 
-  // Studio-style 3-point lighting so the model still has clear directional
+  // Studio-style 3-point lighting so the model has clear directional
   // modeling (the environment map above supplies soft ambient-ish fill +
   // reflections, but no strong directionality on its own):
   //   - key: the main light, angled above-front, does most of the modeling
@@ -157,17 +159,34 @@ export function initScene(stageEl) {
   // to compensate for having *only* direct light) blow out highlights.
   scene.add(new THREE.AmbientLight(0xffffff, 0.25));
 
+  // These three are parented to the CAMERA, not the scene — a "headlight"
+  // rig. This app rotates by orbiting the camera around a stationary
+  // model (OrbitControls), so lights added straight to the scene sit at a
+  // fixed world position forever: they only ever flatter whichever side
+  // faced the camera's starting position, and dragging to the sides/back
+  // swings the model away from that light entirely (that was the actual
+  // "sides/back look flat" bug — not the environment map or tone mapping,
+  // both of which apply uniformly regardless of rotation already).
+  // Parenting to the camera means each light's position is expressed in
+  // the camera's local space and Three.js recomputes its world position
+  // from the camera's current transform every frame — as OrbitControls
+  // orbits the camera, the whole rig orbits with it, so whichever face is
+  // currently toward the viewer gets the same key/fill/rim treatment the
+  // front used to get alone. (The camera itself must be added to the
+  // scene graph for its children to be traversed/rendered at all.)
+  scene.add(camera);
+
   const keyLight = new THREE.DirectionalLight(0xffffff, 0.9);
-  keyLight.position.set(2.5, 3.2, 2.6); // ~45° above, from the front
-  scene.add(keyLight);
+  keyLight.position.set(1.5, 2, 1); // up + to the camera's right, roughly over-the-shoulder
+  camera.add(keyLight);
 
   const fillLight = new THREE.DirectionalLight(0xffffff, 0.35);
-  fillLight.position.set(-3, 1.4, 2); // opposite side of the key, lower + softer
-  scene.add(fillLight);
+  fillLight.position.set(-2.5, 0.8, 0.5); // camera's opposite side, lower + softer
+  camera.add(fillLight);
 
   const rimLight = new THREE.DirectionalLight(0xffffff, 0.45);
-  rimLight.position.set(-1.5, 2.2, -3); // behind the model, for edge definition
-  scene.add(rimLight);
+  rimLight.position.set(-0.5, 1.5, -4); // far side of the model as seen from the camera, for edge definition
+  camera.add(rimLight);
 
   controls = new OrbitControls(camera, renderer.domElement);
   controls.target.set(0, 0, 0);
